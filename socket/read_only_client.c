@@ -63,16 +63,6 @@ int client(struct addrinfo *servinfo)
   //          s, sizeof s);
   //printf("client: connecting to %s\n", s);
 
-  if ((numbytes = send(sockfd, "STATUS", 6, 0)) == -1) {
-    perror("send");
-    exit(1);
-  }
-
-  if (numbytes < 6) {
-    fprintf(stderr, "Sent only %d bytes, not full 6!\n", numbytes);
-    exit(1);
-  }
-
   if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
     perror("recv");
     exit(1);
