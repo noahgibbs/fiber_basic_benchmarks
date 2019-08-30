@@ -5,6 +5,7 @@
 require 'socket'
 require 'fiber'
 
+QUERY_TEXT = "STATUS".freeze
 RESPONSE_TEXT = "OK".freeze
 
 # The full implementation is given here, in order to show all the parts. A simpler implementation is given below.
@@ -53,17 +54,15 @@ reactor = Reactor.new
 Fiber.new do
     loop do
         client = reactor.wait_readable(server) {server.accept}
-        responded = false
 
         Fiber.new do
-            #buffer = reactor.wait_readable(client) { client.gets }
+            while buffer = reactor.wait_readable(client) { client.read(6) }
+                reactor.wait_writable(client)
+                client.print RESPONSE_TEXT
+            end
 
-            reactor.wait_writable(client) { STDERR.puts "Client is writable!"; client.puts RESPONSE_TEXT; client.close }
-            #reactor.wait_writable(client) do
-            #  client.print RESPONSE_TEXT
-            #  client.close
-            #end
-        end
+            client.close
+        end.resume
     end
 end.resume
 
