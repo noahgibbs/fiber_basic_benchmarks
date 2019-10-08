@@ -137,5 +137,4 @@ puts "Starting reactor..."
 reactor.run
 
 puts "Done, finished all reactor Fibers!"
-
-# Exit
+exit 0

@@ -105,8 +105,8 @@ if pending_write_msgs.any? { |p| p != 0 } || pending_read_msgs.any? { |p| p != 0
   puts "Not all messages were delivered!"
   puts "Remaining read: #{pending_read_msgs.inspect}"
   puts "Remaining write: #{pending_write_msgs.inspect}"
+  exit -1
 else
   puts "All messages delivered successfully..."
+  exit 0
 end
-
-# Exit
