@@ -58,10 +58,16 @@ def array_variance(arr)
   (ex2 - (ex * ex) / arr.size) / (arr.size - 1)
 end
 
-by_pre_bench_workers_msgs.each do |preamble, pre_hash|
-    pre_hash.each do |benchmark, bench_hash|
-        bench_hash.each do |workers, workers_hash|
-            workers_hash.each do |msgs, data_array|
+preamble_keys = by_pre_bench_workers_msgs.keys.sort
+preamble_keys.each do |preamble|
+    benchmark_keys = by_pre_bench_workers_msgs[preamble].keys.sort
+    benchmark_keys.each do |benchmark|
+        workers_keys = by_pre_bench_workers_msgs[preamble][benchmark].keys.sort
+        workers_keys.each do |workers|
+            workers_hash = by_pre_bench_workers_msgs[preamble][benchmark][workers]
+            msgs_keys = workers_hash.keys.sort
+            msgs_keys.each do |msgs|
+                data_array = workers_hash[msgs]
                 config_description = "Pre: #{preamble.inspect} Bench: #{benchmark.inspect} W: #{workers.inspect} Msg: #{msgs.inspect}"
                 if data_array.empty?
                     puts "No data for configuration #{config_description}"
@@ -80,7 +86,7 @@ by_pre_bench_workers_msgs.each do |preamble, pre_hash|
                     puts "  median:   #{percentile(whole_process_data, 50)}"
                     puts "  variance: #{array_variance(whole_process_data)}"
                     puts "  std_dev:  #{Math.sqrt array_variance(whole_process_data)}"
-                    puts "-----"
+                    puts "====="
                 end
             end
         end
