@@ -74,7 +74,7 @@ loop do
     buf = io.read(RESPONSE_TEXT.size)
     if buf != RESPONSE_TEXT
       master_read.delete(io)
-      STDERR.puts "Wrong response from worker! Got #{buf.inspect} instead of #{RESPONSE_TEXT.inspect}!"
+      raise.puts "Wrong response from worker! Got #{buf.inspect} instead of #{RESPONSE_TEXT.inspect}!"
     else
       pending_read_msgs[idx] -= 1
       if pending_read_msgs[idx] == 0
@@ -100,21 +100,12 @@ loop do
   end
 end
 
-working_time = Time.now - working_t0
-#puts "Done, waiting for workers..."
 workers.each { |t| t.join }
-#puts "Done."
+working_time = Time.now - working_t0
 
 success = true
-
 if pending_write_msgs.any? { |p| p != 0 } || pending_read_msgs.any? { |p| p != 0}
-#  puts "Not all messages were delivered!"
-#  puts "Remaining read: #{pending_read_msgs.inspect}"
-#  puts "Remaining write: #{pending_write_msgs.inspect}"
   success = false
-#else
-#  puts "All messages delivered successfully..."
-#  exit 0
 end
 
 out_data = {
@@ -122,8 +113,8 @@ out_data = {
   requests_per_batch: NUM_REQUESTS,
   time: working_time,
   success: success,
-  pending_write: pending_write_msgs,
-  pending_read: pending_read_msgs,
+  pending_write_failures: pending_write_msgs.select { |n| n != 0 },
+  pending_read_failures: pending_read_msgs.select { |n| n != 0 },
 }
 File.open(OUTFILE, "w") do |f|
   f.write JSON.pretty_generate(out_data)

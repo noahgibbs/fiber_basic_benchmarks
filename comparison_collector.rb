@@ -90,9 +90,9 @@ ordered_configs.each do |config|
   should_run = RUBY_PREFLIGHT.call(preamble, bench, workers, messages)
   if should_run
     File.unlink(run_data_file) if File.exist?(run_data_file)
-    shell_command = "bash -l -c \"#{preamble} && benchmarks/fiber_test.rb #{workers} #{messages} #{run_data_file}\""
+    shell_command = "bash -l -c \"#{preamble} && benchmarks/#{bench} #{workers} #{messages} #{run_data_file}\""
     shell_t0 = Time.now
-    puts "Running with config: #{rep_num.inspect} #{preamble.inspect} #{bench.inspect} #{workers.inspect} #{messages.inspect}..."
+    #puts "Running with config: #{rep_num.inspect} #{preamble.inspect} #{bench.inspect} #{workers.inspect} #{messages.inspect}..."
     puts "Command is: #{shell_command.inspect}"
     result = system(shell_command)
     shell_tfinal = Time.now
@@ -102,6 +102,7 @@ ordered_configs.each do |config|
     run_data = {
         rep_num: rep_num,
         preamble: preamble,
+        benchmark: bench,
         workers: workers,
         messages: messages,
         result_status: result,

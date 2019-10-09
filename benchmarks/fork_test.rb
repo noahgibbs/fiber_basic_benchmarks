@@ -74,7 +74,7 @@ loop do
     buf = io.read(RESPONSE_TEXT.size)
     if buf != RESPONSE_TEXT
       master_read.delete(io)
-      STDERR.puts "Wrong response from worker! Got #{buf.inspect} instead of #{RESPONSE_TEXT.inspect}!"
+      raise.puts "Wrong response from worker! Got #{buf.inspect} instead of #{RESPONSE_TEXT.inspect}!"
     else
       pending_read_msgs[idx] -= 1
       if pending_read_msgs[idx] == 0
@@ -121,8 +121,8 @@ out_data = {
   requests_per_batch: NUM_REQUESTS,
   time: working_time,
   success: success,
-  pending_write: pending_write_msgs,
-  pending_read: pending_read_msgs,
+  pending_write_failures: pending_write_msgs.select { |n| n != 0 },
+  pending_read_failures: pending_read_msgs.select { |n| n != 0 },
 }
 File.open(OUTFILE, "w") do |f|
   f.write JSON.pretty_generate(out_data)

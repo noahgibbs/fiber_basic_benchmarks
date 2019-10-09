@@ -148,5 +148,3 @@ out_data = {
 }
 
 File.open(OUTFILE, "w") { |f| f.write JSON.pretty_generate(out_data) }
-
-exit 0
