@@ -55,6 +55,7 @@ require "json"
 data_filename = "collector_data_#{COLLECTOR_TS}.json"
 out_data = {
     collector_ruby_version: RUBY_VERSION,
+    reps_per_config: REPS_PER_CONFIG,
     configs: WORKER_CONFIGS,
     benchmarks: BENCHMARKS,
     preambles: SHELL_PREAMBLES,
@@ -72,7 +73,7 @@ configs_w_preamble =
     }
 }
 
-puts "All configs:\n#{JSON.pretty_generate configs_w_preamble}"
+#puts "All configs:\n#{JSON.pretty_generate configs_w_preamble}"
 
 # Randomize the order of trials
 ordered_configs = configs_w_preamble.sample(configs_w_preamble.size)
@@ -93,7 +94,7 @@ ordered_configs.each do |config|
     shell_command = "bash -l -c \"#{preamble} && benchmarks/#{bench} #{workers} #{messages} #{run_data_file}\""
     shell_t0 = Time.now
     #puts "Running with config: #{rep_num.inspect} #{preamble.inspect} #{bench.inspect} #{workers.inspect} #{messages.inspect}..."
-    puts "Command is: #{shell_command.inspect}"
+    puts "Running command: #{shell_command.inspect}"
     result = system(shell_command)
     shell_tfinal = Time.now
     shell_elapsed = shell_tfinal - shell_t0
