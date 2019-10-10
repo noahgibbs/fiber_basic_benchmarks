@@ -56,8 +56,8 @@ SHELL_PREAMBLES = RUBY_VERSIONS.map { |ver|
     [
         "ulimit -Sn 1024",  # Linux has tight default file descriptor limits
         "rvm use #{ver} --install",
-        "gem install bundler -v1.17.3",
-        "bundle",
+        #"gem install bundler -v1.17.3",
+        #"bundle",
     ].join("&&")
 }
 
