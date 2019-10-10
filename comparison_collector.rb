@@ -63,7 +63,7 @@ SHELL_PREAMBLES = RUBY_VERSIONS.map { |ver|
 
 # Before we spawn this subshell and run the test - should we?
 RUBY_PREFLIGHT = lambda do |preamble, bench, workers, messages|
-  return false if preamble == "rvm use 2.0.0-p0" && workers > 100  # Ruby 2.0.0 segfaults with too many procs, fibers or threads
+  return false if preamble["2.0.0-p0"] && workers > 100  # Ruby 2.0.0 segfaults with too many procs, fibers or threads
   true
 end
 
