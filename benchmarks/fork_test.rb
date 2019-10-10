@@ -1,19 +1,21 @@
 #!/usr/bin/env ruby
 
 require 'socket'
+require 'json'
 
 # TODO: make these much larger, see if we're effectively batching
 # even if we don't mean to...
 QUERY_TEXT = "STATUS".freeze
 RESPONSE_TEXT = "OK".freeze
 
-if ARGV.size != 2
-  STDERR.puts "Usage: ./fork_test <num_workers> <num_requests>"
+if ARGV.size != 3
+  STDERR.puts "Usage: ./fork_test <num_workers> <num_requests> <outfile>"
   exit 1
 end
 
 NUM_WORKERS = ARGV[0].to_i
 NUM_REQUESTS = ARGV[1].to_i
+OUTFILE = ARGV[2]
 
 worker_read = []
 worker_write = []
@@ -26,7 +28,8 @@ readable_idx_for = {}
 
 workers = []
 
-puts "Setting up pipes..."
+#puts "Setting up pipes..."
+working_t0 = Time.now
 NUM_WORKERS.times do |i|
   r, w = IO.pipe
   worker_read.push r
@@ -39,7 +42,7 @@ NUM_WORKERS.times do |i|
   readable_idx_for[r] = i
 end
 
-puts "Setting up processes..."
+#puts "Setting up processes..."
 NUM_WORKERS.times do |i|
   pid = fork do
     # Worker code
@@ -59,7 +62,7 @@ end
 pending_write_msgs = (1..NUM_WORKERS).map { NUM_REQUESTS }
 pending_read_msgs = pending_write_msgs.dup
 
-puts "Starting master..."
+#puts "Starting master..."
 loop do
   break if master_read.empty? && master_write.empty?
   readable, writable = IO.select master_read, master_write, []
@@ -71,7 +74,7 @@ loop do
     buf = io.read(RESPONSE_TEXT.size)
     if buf != RESPONSE_TEXT
       master_read.delete(io)
-      STDERR.puts "Wrong response from worker! Got #{buf.inspect} instead of #{RESPONSE_TEXT.inspect}!"
+      raise.puts "Wrong response from worker! Got #{buf.inspect} instead of #{RESPONSE_TEXT.inspect}!"
     else
       pending_read_msgs[idx] -= 1
       if pending_read_msgs[idx] == 0
@@ -97,18 +100,32 @@ loop do
   end
 end
 
-puts "Done, waiting for workers..."
+#puts "Done, waiting for workers..."
 workers.each { |pid| Process.waitpid(pid) }
-puts "Done."
+working_time = Time.now - working_t0
+#puts "Done."
 
+success = true
 if pending_write_msgs.any? { |p| p != 0 } || pending_read_msgs.any? { |p| p != 0}
   puts "Not all messages were delivered!"
   puts "Remaining read: #{pending_read_msgs.inspect}"
   puts "Remaining write: #{pending_write_msgs.inspect}"
-  exit -1
-else
-  puts "All messages delivered successfully..."
-  exit 0
+  success = false
+#else
+#  puts "All messages delivered successfully..."
+#  exit 0
+end
+
+out_data = {
+  workers: NUM_WORKERS,
+  requests_per_batch: NUM_REQUESTS,
+  time: working_time,
+  success: success,
+  pending_write_failures: pending_write_msgs.select { |n| n != 0 },
+  pending_read_failures: pending_read_msgs.select { |n| n != 0 },
+}
+File.open(OUTFILE, "w") do |f|
+  f.write JSON.pretty_generate(out_data)
 end
 
 # Exit

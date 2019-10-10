@@ -2,19 +2,21 @@
 
 require 'socket'
 require 'fiber'
+require 'json'
 
 # TODO: make these much larger, see if we're effectively batching
 # even if we don't mean to...
 QUERY_TEXT = "STATUS".freeze
 RESPONSE_TEXT = "OK".freeze
 
-if ARGV.size != 2
-  STDERR.puts "Usage: ./fiber_test <num_workers> <num_requests>"
+if ARGV.size != 3
+  STDERR.puts "Usage: ./fiber_test <num workers> <number of requests/batch> <output filename>"
   exit 1
 end
 
 NUM_WORKERS = ARGV[0].to_i
 NUM_REQUESTS = ARGV[1].to_i
+OUTFILE = ARGV[2]
 
 # Fiber reactor code taken from
 # https://www.codeotaku.com/journal/2018-11/fibers-are-the-right-solution/index
@@ -70,7 +72,9 @@ readable_idx_for = {}
 
 workers = []
 
-puts "Setting up pipes..."
+#puts "Setting up pipes..."
+working_t0 = Time.now
+
 NUM_WORKERS.times do |i|
   r, w = IO.pipe
   worker_read.push r
@@ -85,7 +89,7 @@ end
 
 reactor = Reactor.new
 
-puts "Setting up fibers..."
+#puts "Setting up fibers..."
 NUM_WORKERS.times do |i|
   f = Fiber.new do
     # Worker code
@@ -102,18 +106,16 @@ NUM_WORKERS.times do |i|
 end
 
 workers.each { |f| f.resume }
-puts "Resumed all worker Fibers..."
+#puts "Resumed all worker Fibers..."
 
 ### Master code ###
 
-puts "Starting master..."
-# Let's try a Fiber-based master as well - one Fiber per
-# worker which alternates reads and writes, so it's
-# structured a lot like the worker itself.
+#puts "Starting master..."
 
 master_fiber = Fiber.new do
   master_subfibers = []
   NUM_WORKERS.times do |worker_num|
+    # This fiber will handle a single batch
     f = Fiber.new do
       NUM_REQUESTS.times do |req_num|
         reactor.wait_writable(master_write[worker_num]) do
@@ -133,8 +135,16 @@ master_fiber = Fiber.new do
 end
 master_fiber.resume
 
-puts "Starting reactor..."
+#puts "Starting reactor..."
 reactor.run
+working_time = Time.now - working_t0
+#puts "Done, finished all reactor Fibers!"
 
-puts "Done, finished all reactor Fibers!"
-exit 0
+out_data = {
+  workers: NUM_WORKERS,
+  requests_per_batch: NUM_REQUESTS,
+  time: working_time,
+  success: true,
+}
+
+File.open(OUTFILE, "w") { |f| f.write JSON.pretty_generate(out_data) }

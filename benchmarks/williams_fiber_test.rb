@@ -2,6 +2,7 @@
 
 require 'socket'
 require 'fiber'
+require 'json'
 
 puts
 puts RUBY_DESCRIPTION
@@ -21,6 +22,7 @@ RESPONSE_TEXT = "OK".freeze
 
 NUM_WORKERS = (ARGV[0] || 10_000).to_i
 NUM_REQUESTS = (ARGV[1] || 100).to_i
+OUTFILE = ARGV[2]
 
 # Fiber reactor code taken from
 # https://www.codeotaku.com/journal/2018-11/fibers-are-the-right-solution/index
@@ -62,7 +64,7 @@ class Wrapper
 		@io = io
 		@reactor = reactor
 	end
-	
+
 	if RUBY_VERSION >= "2.3"
 		def read_nonblock(length, buffer)
 			while true
@@ -77,7 +79,7 @@ class Wrapper
 			end
 
 		end
-		
+
 		def write_nonblock(buffer)
 			while true
 				case result = @io.write_nonblock(buffer, exception: false)
@@ -102,7 +104,7 @@ class Wrapper
 				end
 			end
 		end
-		
+
 		def write_nonblock(buffer)
 			while true
 				begin
@@ -115,36 +117,36 @@ class Wrapper
 			end
 		end
 	end
-	
+
 	def read(length, buffer = nil)
 		if buffer
 			buffer.clear
 		else
 			buffer = String.new.b
 		end
-		
+
 		result = self.read_nonblock(length - buffer.bytesize, buffer)
-		
+
 		if result == length
 			return result
 		end
-		
+
 		chunk = String.new.b
 		while chunk = self.read_nonblock(length - buffer.bytesize, chunk)
 			buffer << chunk
-			
+
 			break if buffer.bytesize == length
 		end
-		
+
 		return buffer
 	end
-	
+
 	def write(buffer)
 		remaining = buffer.dup
-		
+
 		while true
 			result = self.write_nonblock(remaining)
-			
+
 			if result == remaining.bytesize
 				return buffer.bytesize
 			else
@@ -163,6 +165,8 @@ master_read = []
 master_write = []
 
 workers = []
+
+working_t0 = Time.now
 
 # puts "Setting up pipes..."
 NUM_WORKERS.times do |i|
@@ -211,9 +215,15 @@ master_fiber.resume
 
 # puts "Starting reactor..."
 reactor.run
+working_time = Time.now - working_t0
 
-# puts "Done, finished all reactor Fibers!"
+#puts Process.times
 
-puts Process.times
+out_data = {
+  workers: NUM_WORKERS,
+  requests_per_batch: NUM_REQUESTS,
+  time: working_time,
+  success: true,
+}
 
-# Exit
+File.open(OUTFILE, "w") { |f| f.write JSON.pretty_generate(out_data) }
