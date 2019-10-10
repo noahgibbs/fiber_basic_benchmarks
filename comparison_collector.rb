@@ -8,12 +8,22 @@
 # different concurrency setups - threads and fibers might well have an advantage over
 # processes for message I/O effiency, for instance.
 
-REPS_PER_CONFIG = 1
+REPS_PER_CONFIG = 10
 
+## Worker configs from original benchmarking results post
+#WORKER_CONFIGS = [
+#    [ 5, 20_000],
+#    [ 10, 10_000],
+#    [ 100, 1000],
+#    [ 1_000, 100],
+#]
+
+# Try 10x messages
 WORKER_CONFIGS = [
-    [ 10, 1_000],
-    [ 100, 100],
-    [ 1_000, 10],
+    [ 5,   200_000],
+    [ 10,  100_000],
+    [ 100,  10_000],
+    [ 1_000, 1_000],
 ]
 
 BENCHMARKS = [
