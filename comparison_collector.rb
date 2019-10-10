@@ -58,7 +58,7 @@ SHELL_PREAMBLES = RUBY_VERSIONS.map { |ver|
         "rvm use #{ver} --install",
         #"gem install bundler -v1.17.3",
         #"bundle",
-    ].join("&&")
+    ].join(" && ")
 }
 
 # Before we spawn this subshell and run the test - should we?
