@@ -54,7 +54,7 @@ BENCHMARKS = [
 RUBY_VERSIONS = [ "2.0.0-p0", "2.1.10", "2.2.10", "2.3.8", "2.4.5", "2.5.3", "2.6.5" ]
 SHELL_PREAMBLES = RUBY_VERSIONS.map { |ver|
     [
-        "ulimit -Sn 1024",  # Linux has tight default file descriptor limits
+        "ulimit -Sn 10240",  # Linux has tight default file descriptor limits
         "rvm use #{ver} --install",
         #"gem install bundler -v1.17.3",
         #"bundle",
