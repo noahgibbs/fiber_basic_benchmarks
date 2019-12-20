@@ -27,36 +27,36 @@ OUTFILE = ARGV[2]
 # Fiber reactor code taken from
 # https://www.codeotaku.com/journal/2018-11/fibers-are-the-right-solution/index
 class Reactor
-		def initialize
-				@readable = {}
-				@writable = {}
+	def initialize
+		@readable = {}
+		@writable = {}
+	end
+	
+	def run
+		while @readable.any? or @writable.any?
+			readable, writable = IO.select(@readable.keys, @writable.keys, [])
+			
+			readable.each do |io|
+				@readable[io].resume
+			end
+			
+			writable.each do |io|
+				@writable[io].resume
+			end
 		end
+	end
 
-		def run
-				while @readable.any? or @writable.any?
-						readable, writable = IO.select(@readable.keys, @writable.keys, [])
+	def wait_readable(io)
+		@readable[io] = Fiber.current
+		Fiber.yield
+		@readable.delete(io)
+	end
 
-						readable.each do |io|
-								@readable[io].resume
-						end
-
-						writable.each do |io|
-								@writable[io].resume
-						end
-				end
-		end
-
-		def wait_readable(io)
-				@readable[io] = Fiber.current
-				Fiber.yield
-				@readable.delete(io)
-		end
-
-		def wait_writable(io)
-				@writable[io] = Fiber.current
-				Fiber.yield
-				@writable.delete(io)
-		end
+	def wait_writable(io)
+		@writable[io] = Fiber.current
+		Fiber.yield
+		@writable.delete(io)
+	end
 end
 
 class Wrapper
@@ -64,7 +64,7 @@ class Wrapper
 		@io = io
 		@reactor = reactor
 	end
-
+	
 	if RUBY_VERSION >= "2.3"
 		def read_nonblock(length, buffer)
 			while true
@@ -77,7 +77,6 @@ class Wrapper
 					return result
 				end
 			end
-
 		end
 
 		def write_nonblock(buffer)
@@ -220,10 +219,10 @@ working_time = Time.now - working_t0
 #puts Process.times
 
 out_data = {
-  workers: NUM_WORKERS,
-  requests_per_batch: NUM_REQUESTS,
-  time: working_time,
-  success: true,
+	workers: NUM_WORKERS,
+	requests_per_batch: NUM_REQUESTS,
+	time: working_time,
+	success: true,
 }
 
 File.open(OUTFILE, "w") { |f| f.write JSON.pretty_generate(out_data) }
